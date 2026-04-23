@@ -1,421 +1,465 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Trophy, Timer, Smartphone, User, Phone, Send, AlertCircle, CheckCircle2, QrCode, RefreshCcw, Star, Flag } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galaxy 星際盃：瑪利歐計時挑戰賽</title>
 
-// ============================================================================
-// ✅ 已替換為您的專屬 Google Apps Script 網址
-// ============================================================================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyDupulaMXWebWp2cnkULaovpW5cQRJcN47oVmQ1ObcJFA8kqsp9nP7Qh7CmJEpRy1u/exec';
+  <!-- 1. 載入 Tailwind CSS (處理視覺樣式) -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-export default function App() {
-  const [scores, setScores] = useState([]);
-  const [loading, setLoading] = useState(true);
+  <!-- 2. 載入 React 核心程式庫 -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+  <!-- 3. 載入 Babel (瀏覽器即時翻譯 JSX 語法) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- 移除會引發衝突的外部 lucide-react CDN -->
+
+  <style>
+    /* 補足 Tailwind 的自訂動畫設定 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-\\[fadeIn_0\\.5s_ease-in-out\\] {
+      animation: fadeIn 0.5s ease-in-out forwards;
+    }
+  </style>
+</head>
+<body class="bg-[#111827] text-slate-100 font-sans selection:bg-red-500/30">
   
-  // 表單狀態
-  const [formData, setFormData] = useState({
-    nickname: '',
-    phone: '',
-    minutes: '01',
-    seconds: '30',
-    milliseconds: '000'
-  });
-  
-  // 提示訊息狀態
-  const [message, setMessage] = useState({ type: '', text: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  <!-- 網頁內容將會被注入到這裡 -->
+  <div id="root"></div>
 
-  // === 1. 從 Google 試算表獲取排行榜資料 ===
-  const fetchScores = useCallback(async () => {
-    if (!GAS_URL) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(`${GAS_URL}?action=getTopScores`);
-      if (!response.ok) throw new Error('Network response was not ok');
-      const data = await response.json();
-      setScores(data);
-    } catch (error) {
-      console.error('獲取資料失敗:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // 初始載入與自動刷新 (每10秒向試算表要一次資料)
-  useEffect(() => {
-    fetchScores();
-    const intervalId = setInterval(() => {
-      fetchScores();
-    }, 10000);
-    return () => clearInterval(intervalId);
-  }, [fetchScores]);
-
-  // === 2. 表單處理邏輯 ===
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    if (['phone', 'minutes', 'seconds', 'milliseconds'].includes(name)) {
-      if (!/^\d*$/.test(value)) return;
-    }
+  <!-- 核心活動邏輯 (使用 Babel 解析) -->
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useCallback } = React;
     
-    if (name === 'phone' && value.length > 10) return;
-    if (name === 'minutes' && value.length > 2) return;
-    if (name === 'seconds' && value.length > 2) return;
-    if (name === 'milliseconds' && value.length > 3) return;
+    // 內建 SVG 圖示元件 (取代原本會報錯的 lucide-react，徹底解決依賴錯誤)
+    const Icon = ({ children, className, strokeWidth = 2, fill = "none", ...props }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+        {children}
+      </svg>
+    );
 
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+    const Trophy = (p) => <Icon {...p}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></Icon>;
+    const Timer = (p) => <Icon {...p}><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></Icon>;
+    const Smartphone = (p) => <Icon {...p}><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></Icon>;
+    const User = (p) => <Icon {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>;
+    const Phone = (p) => <Icon {...p}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></Icon>;
+    const Send = (p) => <Icon {...p}><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Icon>;
+    const AlertCircle = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></Icon>;
+    const CheckCircle2 = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></Icon>;
+    const QrCode = (p) => <Icon {...p}><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></Icon>;
+    const RefreshCcw = (p) => <Icon {...p}><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/></Icon>;
+    const Star = (p) => <Icon {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></Icon>;
+    const Flag = (p) => <Icon {...p}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></Icon>;
 
-  const padZero = (num, length) => {
-    return num.toString().padStart(length, '0');
-  };
+    // 您專屬的 Google Apps Script 網址 (已保留)
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyDupulaMXWebWp2cnkULaovpW5cQRJcN47oVmQ1ObcJFA8kqsp9nP7Qh7CmJEpRy1u/exec';
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage({ type: '', text: '' });
-
-    if (!GAS_URL) {
-      setMessage({ type: 'error', text: '請先設定 Google Apps Script 網址' });
-      return;
-    }
-
-    if (!formData.nickname.trim() || !formData.phone.trim()) {
-      setMessage({ type: 'error', text: '請填寫暱稱與聯絡電話。' });
-      return;
-    }
-    if (formData.phone.length < 9) {
-      setMessage({ type: 'error', text: '請填寫正確的手機號碼格式。' });
-      return;
-    }
-
-    const min = parseInt(formData.minutes || 0, 10);
-    const sec = parseInt(formData.seconds || 0, 10);
-    const ms = parseInt(formData.milliseconds || 0, 10);
-
-    if (sec >= 60) {
-      setMessage({ type: 'error', text: '秒數不能大於或等於60。' });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const totalMs = (min * 60 * 1000) + (sec * 1000) + ms;
-      const timeDisplay = `${padZero(min, 2)}:${padZero(sec, 2)}.${padZero(ms, 3)}`;
+    // 應用程式主體
+    function App() {
+      const [scores, setScores] = useState([]);
+      const [loading, setLoading] = useState(true);
       
-      const payload = {
-        action: 'addScore',
-        nickname: formData.nickname.trim(),
-        phone: formData.phone.trim(),
-        timeDisplay: timeDisplay,
-        totalMs: totalMs
+      const [formData, setFormData] = useState({
+        nickname: '',
+        phone: '',
+        minutes: '01',
+        seconds: '30',
+        milliseconds: '000'
+      });
+      
+      const [message, setMessage] = useState({ type: '', text: '' });
+      const [isSubmitting, setIsSubmitting] = useState(false);
+      const [isSubmitted, setIsSubmitted] = useState(false);
+
+      const fetchScores = useCallback(async () => {
+        if (!GAS_URL) {
+          setLoading(false);
+          return;
+        }
+
+        try {
+          const response = await fetch(`${GAS_URL}?action=getTopScores`);
+          if (!response.ok) throw new Error('Network response was not ok');
+          const data = await response.json();
+          setScores(data);
+        } catch (error) {
+          console.error('獲取資料失敗:', error);
+        } finally {
+          setLoading(false);
+        }
+      }, []);
+
+      useEffect(() => {
+        fetchScores();
+        const intervalId = setInterval(() => {
+          fetchScores();
+        }, 10000);
+        return () => clearInterval(intervalId);
+      }, [fetchScores]);
+
+      const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        if (['phone', 'minutes', 'seconds', 'milliseconds'].includes(name)) {
+          if (!/^\d*$/.test(value)) return;
+        }
+        
+        if (name === 'phone' && value.length > 10) return;
+        if (name === 'minutes' && value.length > 2) return;
+        if (name === 'seconds' && value.length > 2) return;
+        if (name === 'milliseconds' && value.length > 3) return;
+
+        setFormData(prev => ({ ...prev, [name]: value }));
       };
 
-      // 傳送資料至 Google 試算表
-      const response = await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      });
+      const padZero = (num, length) => {
+        return num.toString().padStart(length, '0');
+      };
 
-      const result = await response.json();
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        setMessage({ type: '', text: '' });
 
-      if (result.status === 'success') {
-        setIsSubmitted(true);
-        setMessage({ type: 'success', text: '成績登錄成功！' });
-        fetchScores(); // 送出成功後立即更新排行榜
-      } else {
-        throw new Error(result.message);
-      }
+        if (!GAS_URL) {
+          setMessage({ type: 'error', text: '請先設定 Google Apps Script 網址' });
+          return;
+        }
 
-    } catch (error) {
-      console.error('寫入資料失敗:', error);
-      setMessage({ type: 'error', text: '成績登錄失敗，請確認網路狀態後再試。' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+        if (!formData.nickname.trim() || !formData.phone.trim()) {
+          setMessage({ type: 'error', text: '請填寫暱稱與聯絡電話。' });
+          return;
+        }
+        if (formData.phone.length < 9) {
+          setMessage({ type: 'error', text: '請填寫正確的手機號碼格式。' });
+          return;
+        }
 
-  const handleNextPlayer = () => {
-    setIsSubmitted(false);
-    setMessage({ type: '', text: '' });
-    setFormData({
-      nickname: '',
-      phone: '',
-      minutes: '01',
-      seconds: '30',
-      milliseconds: '000'
-    });
-  };
+        const min = parseInt(formData.minutes || 0, 10);
+        const sec = parseInt(formData.seconds || 0, 10);
+        const ms = parseInt(formData.milliseconds || 0, 10);
 
-  return (
-    <div className="min-h-screen bg-[#111827] text-slate-100 font-sans selection:bg-red-500/30">
-      {/* 頂部瑪利歐風格賽道裝飾線 */}
-      <div 
-        className="w-full h-4 border-b-4 border-yellow-400" 
-        style={{ 
-          backgroundImage: 'repeating-conic-gradient(#000 0% 25%, #fff 0% 50%)', 
-          backgroundSize: '24px 24px' 
-        }}
-      ></div>
+        if (sec >= 60) {
+          setMessage({ type: 'error', text: '秒數不能大於或等於60。' });
+          return;
+        }
 
-      <header className="relative overflow-hidden bg-gradient-to-r from-red-600 via-red-500 to-blue-600 border-b-8 border-[#0f172a]">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay"></div>
-        
-        {/* 漂浮的小裝飾元素 */}
-        <Star className="absolute top-4 right-1/4 w-6 h-6 text-yellow-300 opacity-50 fill-yellow-300 animate-pulse" />
-        <Star className="absolute bottom-4 left-1/3 w-4 h-4 text-yellow-300 opacity-30 fill-yellow-300" />
-        
-        <div className="max-w-6xl mx-auto px-4 py-8 relative z-10 flex flex-col md:flex-row items-center justify-between">
-          <div className="flex items-center space-x-4 mb-4 md:mb-0">
-            <div className="bg-white p-2 rounded-2xl border-4 border-[#0f172a] shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] rotate-[-5deg]">
-               <Smartphone className="w-10 h-10 text-red-500" />
-            </div>
-            <div>
-              <h1 className="text-3xl md:text-4xl font-black tracking-wider text-white drop-shadow-[2px_2px_0px_rgba(0,0,0,0.8)]">
-                Galaxy 星際盃：<span className="text-yellow-300">瑪利歐計時挑戰賽</span>
-              </h1>
-              <p className="text-white font-bold bg-black/30 inline-block px-3 py-1 rounded-full text-sm tracking-widest mt-2 border border-white/20">
-                微風南山旗艦體驗館 限定活動
-              </p>
-            </div>
-          </div>
-          <div className="flex space-x-2">
-             {/* 右上角連線狀態指示燈 - 遊戲風格 */}
-             <span className="px-4 py-2 bg-white border-4 border-[#0f172a] rounded-xl text-neutral-900 font-bold text-sm flex items-center shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]">
-               <span className="w-3 h-3 rounded-full bg-green-500 border-2 border-green-800 mr-2 animate-pulse"></span>
-               連線中
-             </span>
-          </div>
-        </div>
-      </header>
+        setIsSubmitting(true);
 
-      <main className="max-w-6xl mx-auto px-4 py-10 relative">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        try {
+          const totalMs = (min * 60 * 1000) + (sec * 1000) + ms;
+          const timeDisplay = `${padZero(min, 2)}:${padZero(sec, 2)}.${padZero(ms, 3)}`;
           
-          {/* 左側：成績登錄表單 */}
-          <div className="lg:col-span-7">
-            {/* 遊戲風格的粗框卡片 */}
-            <div className="bg-neutral-800 rounded-3xl border-4 border-[#0f172a] p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(239,68,68,1)] relative overflow-hidden">
-              
-              <div className="flex items-center mb-8 relative z-10 border-b-2 border-neutral-700 pb-4">
-                <Flag className="w-8 h-8 text-red-500 mr-3" />
-                <h2 className="text-2xl font-black text-white tracking-wide">登記完賽成績</h2>
-              </div>
+          const payload = {
+            action: 'addScore',
+            nickname: formData.nickname.trim(),
+            phone: formData.phone.trim(),
+            timeDisplay: timeDisplay,
+            totalMs: totalMs
+          };
 
-              {message.text && (
-                <div className={`p-4 rounded-xl mb-6 flex items-start space-x-3 text-sm font-bold border-4 ${
-                  message.type === 'success' 
-                    ? 'bg-green-100 border-green-600 text-green-800' 
-                    : 'bg-red-100 border-red-600 text-red-800'
-                }`}>
-                  {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 flex-shrink-0" />}
-                  <p>{message.text}</p>
+          const response = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+          });
+
+          const result = await response.json();
+
+          if (result.status === 'success') {
+            setIsSubmitted(true);
+            setMessage({ type: 'success', text: '成績登錄成功！' });
+            fetchScores(); 
+          } else {
+            throw new Error(result.message);
+          }
+
+        } catch (error) {
+          console.error('寫入資料失敗:', error);
+          setMessage({ type: 'error', text: '成績登錄失敗，請確認網路狀態後再試。' });
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      const handleNextPlayer = () => {
+        setIsSubmitted(false);
+        setMessage({ type: '', text: '' });
+        setFormData({
+          nickname: '',
+          phone: '',
+          minutes: '01',
+          seconds: '30',
+          milliseconds: '000'
+        });
+      };
+
+      return (
+        <div className="min-h-screen bg-[#111827] text-slate-100 font-sans selection:bg-red-500/30 flex flex-col">
+          <div 
+            className="w-full h-4 border-b-4 border-yellow-400" 
+            style={{ 
+              backgroundImage: 'repeating-conic-gradient(#000 0% 25%, #fff 0% 50%)', 
+              backgroundSize: '24px 24px' 
+            }}
+          ></div>
+
+          <header className="relative overflow-hidden bg-gradient-to-r from-red-600 via-red-500 to-blue-600 border-b-8 border-[#0f172a]">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay"></div>
+            
+            <Star className="absolute top-4 right-1/4 w-6 h-6 text-yellow-300 opacity-50 fill-yellow-300 animate-pulse" />
+            <Star className="absolute bottom-4 left-1/3 w-4 h-4 text-yellow-300 opacity-30 fill-yellow-300" />
+            
+            <div className="max-w-6xl mx-auto px-4 py-8 relative z-10 flex flex-col md:flex-row items-center justify-between">
+              <div className="flex items-center space-x-4 mb-4 md:mb-0">
+                <div className="bg-white p-2 rounded-2xl border-4 border-[#0f172a] shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] rotate-[-5deg]">
+                   <Smartphone className="w-10 h-10 text-red-500" />
                 </div>
-              )}
-
-              {isSubmitted ? (
-                <div className="relative z-10 flex flex-col items-center justify-center py-6 text-center animate-[fadeIn_0.5s_ease-in-out]">
-                  <div className="w-48 h-48 bg-white p-4 rounded-2xl border-4 border-[#0f172a] shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] mb-6 flex items-center justify-center relative">
-                    <QrCode className="w-full h-full text-neutral-900" strokeWidth={1} />
-                  </div>
-                  
-                  <h3 className="text-3xl font-black text-yellow-400 mb-2 drop-shadow-[2px_2px_0px_rgba(0,0,0,1)]">太棒了！極速車神！</h3>
-                  <p className="text-neutral-300 mb-8 max-w-sm font-medium">
-                    請出示此畫面並掃描上方 QR Code 加入<br/>
-                    <span className="font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg mt-3 inline-block border-2 border-blue-800 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]">三星微風南山 LINE 官方帳號</span><br/>
-                    <span className="inline-block mt-3">即可向工作人員領取您的體驗禮！</span>
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-black tracking-wider text-white drop-shadow-[2px_2px_0px_rgba(0,0,0,0.8)]">
+                    Galaxy 星際盃：<span className="text-yellow-300">瑪利歐計時挑戰賽</span>
+                  </h1>
+                  <p className="text-white font-bold bg-black/30 inline-block px-3 py-1 rounded-full text-sm tracking-widest mt-2 border border-white/20">
+                    微風南山旗艦體驗館 限定活動
                   </p>
-                  
-                  {/* 立體按鈕風格 */}
-                  <button
-                    onClick={handleNextPlayer}
-                    className="px-8 py-4 bg-yellow-400 hover:bg-yellow-300 text-neutral-900 font-black rounded-2xl flex items-center transition-all border-4 border-neutral-900 border-b-8 active:border-b-4 active:translate-y-1"
-                  >
-                    <RefreshCcw className="w-5 h-5 mr-2 font-bold" /> 換下一位挑戰者
-                  </button>
                 </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-300 flex items-center">
-                        <User className="w-5 h-5 mr-1.5 text-blue-400" /> 遊戲暱稱
-                      </label>
-                      <input
-                        type="text"
-                        name="nickname"
-                        value={formData.nickname}
-                        onChange={handleInputChange}
-                        placeholder="例如：信義車神"
-                        className="w-full bg-neutral-900 border-4 border-[#0f172a] rounded-2xl px-4 py-3 text-white font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-neutral-600"
-                        maxLength={15}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-300 flex items-center">
-                        <Phone className="w-5 h-5 mr-1.5 text-blue-400" /> 聯絡電話 (得獎通知)
-                      </label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        placeholder="0912345678"
-                        className="w-full bg-neutral-900 border-4 border-[#0f172a] rounded-2xl px-4 py-3 text-white font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-neutral-600"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 pt-6 border-t-2 border-neutral-700">
-                    <label className="text-sm font-bold text-neutral-300 flex items-center mb-2">
-                      <Timer className="w-5 h-5 mr-1.5 text-red-400" /> 完賽時間 (分 : 秒 . 毫秒)
-                    </label>
-                    <div className="flex items-center space-x-2 md:space-x-4 p-4 bg-neutral-900 rounded-2xl border-4 border-[#0f172a]">
-                      <div className="flex-1 relative">
-                        <input
-                          type="text"
-                          name="minutes"
-                          value={formData.minutes}
-                          onChange={handleInputChange}
-                          className="w-full bg-transparent border-0 px-2 md:px-4 py-2 text-center text-3xl md:text-4xl font-black font-mono text-white focus:ring-0"
-                          placeholder="01"
-                        />
-                        <span className="absolute bottom-0 right-2 text-sm font-bold text-neutral-500">m</span>
-                      </div>
-                      <span className="text-3xl font-black text-red-500">:</span>
-                      <div className="flex-1 relative">
-                        <input
-                          type="text"
-                          name="seconds"
-                          value={formData.seconds}
-                          onChange={handleInputChange}
-                          className="w-full bg-transparent border-0 px-2 md:px-4 py-2 text-center text-3xl md:text-4xl font-black font-mono text-white focus:ring-0"
-                          placeholder="30"
-                        />
-                        <span className="absolute bottom-0 right-2 text-sm font-bold text-neutral-500">s</span>
-                      </div>
-                      <span className="text-3xl font-black text-red-500">.</span>
-                      <div className="flex-1 relative">
-                        <input
-                          type="text"
-                          name="milliseconds"
-                          value={formData.milliseconds}
-                          onChange={handleInputChange}
-                          className="w-full bg-transparent border-0 px-2 md:px-4 py-2 text-center text-3xl md:text-4xl font-black font-mono text-white focus:ring-0"
-                          placeholder="000"
-                        />
-                        <span className="absolute bottom-0 right-2 text-sm font-bold text-neutral-500">ms</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* 水管綠立體按鈕 */}
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || !GAS_URL}
-                    className="w-full mt-8 bg-green-500 hover:bg-green-400 text-white font-black text-xl py-4 rounded-2xl flex items-center justify-center transition-all border-4 border-green-900 border-b-8 active:border-b-4 active:translate-y-1 shadow-[0_4px_0_0_rgba(0,0,0,0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:border-b-8"
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center">
-                         <span className="animate-spin w-6 h-6 border-4 border-white border-t-transparent rounded-full mr-3"></span>
-                         上傳資料中...
-                      </span>
-                    ) : (
-                      <span className="flex items-center text-2xl tracking-wide drop-shadow-md">
-                        <Send className="w-6 h-6 mr-3" strokeWidth={3} /> 登錄成績並兌換好禮
-                      </span>
-                    )}
-                  </button>
-                </form>
-              )}
+              </div>
+              <div className="flex space-x-2">
+                 <span className="px-4 py-2 bg-white border-4 border-[#0f172a] rounded-xl text-neutral-900 font-bold text-sm flex items-center shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]">
+                   <span className="w-3 h-3 rounded-full bg-green-500 border-2 border-green-800 mr-2 animate-pulse"></span>
+                   連線中
+                 </span>
+              </div>
             </div>
-          </div>
+          </header>
 
-          {/* 右側：即時排行榜 */}
-          <div className="lg:col-span-5">
-            <div className="bg-neutral-800 rounded-3xl border-4 border-[#0f172a] p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(59,130,246,1)] h-full relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-red-500 to-blue-500"></div>
-               
-               <div className="flex items-center justify-between mb-8 border-b-2 border-neutral-700 pb-4">
-                <div className="flex items-center">
-                  <Star className="w-8 h-8 text-yellow-400 fill-yellow-400 mr-2 drop-shadow-[1px_1px_0px_rgba(0,0,0,1)]" />
-                  <h2 className="text-2xl font-black text-white tracking-wide">極速神人榜</h2>
+          <main className="max-w-6xl mx-auto px-4 py-10 relative flex-1 w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              
+              <div className="lg:col-span-7">
+                <div className="bg-neutral-800 rounded-3xl border-4 border-[#0f172a] p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(239,68,68,1)] relative overflow-hidden">
+                  
+                  <div className="flex items-center mb-8 relative z-10 border-b-2 border-neutral-700 pb-4">
+                    <Flag className="w-8 h-8 text-red-500 mr-3" />
+                    <h2 className="text-2xl font-black text-white tracking-wide">登記完賽成績</h2>
+                  </div>
+
+                  {message.text && (
+                    <div className={`p-4 rounded-xl mb-6 flex items-start space-x-3 text-sm font-bold border-4 ${
+                      message.type === 'success' 
+                        ? 'bg-green-100 border-green-600 text-green-800' 
+                        : 'bg-red-100 border-red-600 text-red-800'
+                    }`}>
+                      {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 flex-shrink-0" />}
+                      <p>{message.text}</p>
+                    </div>
+                  )}
+
+                  {isSubmitted ? (
+                    <div className="relative z-10 flex flex-col items-center justify-center py-6 text-center animate-[fadeIn_0.5s_ease-in-out]">
+                      <div className="w-48 h-48 bg-white p-4 rounded-2xl border-4 border-[#0f172a] shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] mb-6 flex items-center justify-center relative">
+                        <QrCode className="w-full h-full text-neutral-900" strokeWidth={1} />
+                      </div>
+                      
+                      <h3 className="text-3xl font-black text-yellow-400 mb-2 drop-shadow-[2px_2px_0px_rgba(0,0,0,1)]">太棒了！極速車神！</h3>
+                      <p className="text-neutral-300 mb-8 max-w-sm font-medium">
+                        請出示此畫面並掃描上方 QR Code 加入<br/>
+                        <span className="font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg mt-3 inline-block border-2 border-blue-800 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]">三星微風南山 LINE 官方帳號</span><br/>
+                        <span className="inline-block mt-3">即可向工作人員領取您的體驗禮！</span>
+                      </p>
+                      
+                      <button
+                        onClick={handleNextPlayer}
+                        className="px-8 py-4 bg-yellow-400 hover:bg-yellow-300 text-neutral-900 font-black rounded-2xl flex items-center transition-all border-4 border-neutral-900 border-b-8 active:border-b-4 active:translate-y-1"
+                      >
+                        <RefreshCcw className="w-5 h-5 mr-2 font-bold" /> 換下一位挑戰者
+                      </button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-neutral-300 flex items-center">
+                            <User className="w-5 h-5 mr-1.5 text-blue-400" /> 遊戲暱稱
+                          </label>
+                          <input
+                            type="text"
+                            name="nickname"
+                            value={formData.nickname}
+                            onChange={handleInputChange}
+                            placeholder="例如：信義車神"
+                            className="w-full bg-neutral-900 border-4 border-[#0f172a] rounded-2xl px-4 py-3 text-white font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-neutral-600"
+                            maxLength={15}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-bold text-neutral-300 flex items-center">
+                            <Phone className="w-5 h-5 mr-1.5 text-blue-400" /> 聯絡電話 (得獎通知)
+                          </label>
+                          <input
+                            type="tel"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            placeholder="0912345678"
+                            className="w-full bg-neutral-900 border-4 border-[#0f172a] rounded-2xl px-4 py-3 text-white font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-neutral-600"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 pt-6 border-t-2 border-neutral-700">
+                        <label className="text-sm font-bold text-neutral-300 flex items-center mb-2">
+                          <Timer className="w-5 h-5 mr-1.5 text-red-400" /> 完賽時間 (分 : 秒 . 毫秒)
+                        </label>
+                        <div className="flex items-center space-x-2 md:space-x-4 p-4 bg-neutral-900 rounded-2xl border-4 border-[#0f172a]">
+                          <div className="flex-1 relative">
+                            <input
+                              type="text"
+                              name="minutes"
+                              value={formData.minutes}
+                              onChange={handleInputChange}
+                              className="w-full bg-transparent border-0 px-2 md:px-4 py-2 text-center text-3xl md:text-4xl font-black font-mono text-white focus:ring-0 outline-none"
+                              placeholder="01"
+                            />
+                            <span className="absolute bottom-0 right-2 text-sm font-bold text-neutral-500">m</span>
+                          </div>
+                          <span className="text-3xl font-black text-red-500">:</span>
+                          <div className="flex-1 relative">
+                            <input
+                              type="text"
+                              name="seconds"
+                              value={formData.seconds}
+                              onChange={handleInputChange}
+                              className="w-full bg-transparent border-0 px-2 md:px-4 py-2 text-center text-3xl md:text-4xl font-black font-mono text-white focus:ring-0 outline-none"
+                              placeholder="30"
+                            />
+                            <span className="absolute bottom-0 right-2 text-sm font-bold text-neutral-500">s</span>
+                          </div>
+                          <span className="text-3xl font-black text-red-500">.</span>
+                          <div className="flex-1 relative">
+                            <input
+                              type="text"
+                              name="milliseconds"
+                              value={formData.milliseconds}
+                              onChange={handleInputChange}
+                              className="w-full bg-transparent border-0 px-2 md:px-4 py-2 text-center text-3xl md:text-4xl font-black font-mono text-white focus:ring-0 outline-none"
+                              placeholder="000"
+                            />
+                            <span className="absolute bottom-0 right-2 text-sm font-bold text-neutral-500">ms</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || !GAS_URL}
+                        className="w-full mt-8 bg-green-500 hover:bg-green-400 text-white font-black text-xl py-4 rounded-2xl flex items-center justify-center transition-all border-4 border-green-900 border-b-8 active:border-b-4 active:translate-y-1 shadow-[0_4px_0_0_rgba(0,0,0,0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:border-b-8"
+                      >
+                        {isSubmitting ? (
+                          <span className="flex items-center">
+                             <span className="animate-spin w-6 h-6 border-4 border-white border-t-transparent rounded-full mr-3"></span>
+                             上傳資料中...
+                          </span>
+                        ) : (
+                          <span className="flex items-center text-2xl tracking-wide drop-shadow-md">
+                            <Send className="w-6 h-6 mr-3" strokeWidth={3} /> 登錄成績並兌換好禮
+                          </span>
+                        )}
+                      </button>
+                    </form>
+                  )}
                 </div>
-                {loading && <span className="w-6 h-6 rounded-full border-4 border-yellow-400 border-t-transparent animate-spin"></span>}
               </div>
 
-              {loading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="animate-pulse bg-neutral-700 border-4 border-neutral-600 h-24 rounded-2xl"></div>
-                  ))}
-                </div>
-              ) : scores.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-48 text-neutral-400 border-4 border-dashed border-neutral-600 rounded-2xl bg-neutral-900/50">
-                  <Trophy className="w-12 h-12 mb-3 opacity-50" />
-                  <p className="font-bold">尚無挑戰者，搶先成為第一名！</p>
-                </div>
-              ) : (
-                <div className="space-y-4 relative z-10">
-                  {scores.map((score, index) => {
-                    const rankStyles = [
-                      // 冠軍：無敵星黃色系
-                      { bg: 'bg-yellow-400', border: 'border-yellow-600', textColor: 'text-neutral-900', iconBg: 'bg-white', iconColor: 'text-yellow-500 fill-yellow-500', timeColor: 'text-neutral-900' },
-                      // 亞軍：銀灰色系
-                      { bg: 'bg-neutral-300', border: 'border-neutral-500', textColor: 'text-neutral-900', iconBg: 'bg-white', iconColor: 'text-neutral-600', timeColor: 'text-neutral-800' },
-                      // 季軍：古銅橘色系
-                      { bg: 'bg-orange-400', border: 'border-orange-600', textColor: 'text-neutral-900', iconBg: 'bg-white', iconColor: 'text-orange-600', timeColor: 'text-neutral-900' }
-                    ];
-                    const style = rankStyles[index];
-
-                    return (
-                      <div key={score.id} className={`flex items-center p-4 rounded-2xl border-4 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] transition-all transform hover:-translate-y-1 ${style.bg} ${style.border}`}>
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-xl border-4 border-[#0f172a] mr-4 shadow-inner ${style.iconBg} ${style.iconColor}`}>
-                          {index === 0 ? <Star className="w-6 h-6 fill-yellow-400" /> : index + 1}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`font-black truncate text-xl ${style.textColor} drop-shadow-sm`}>{score.nickname}</p>
-                          <p className={`text-xs font-bold opacity-75 ${style.textColor}`}>完賽成績</p>
-                        </div>
-                        <div className="text-right ml-4 bg-white/50 px-3 py-1.5 rounded-lg border-2 border-[#0f172a]/20">
-                           <p className={`font-mono text-xl md:text-2xl font-black tracking-tighter ${style.timeColor}`}>
-                             {score.timeDisplay}
-                           </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  <div className="mt-8 pt-6 border-t-2 border-neutral-700">
-                    <p className="text-sm font-black text-yellow-400 uppercase tracking-widest mb-4">👑 最終大獎預覽</p>
-                    <ul className="space-y-3 text-sm font-bold text-neutral-300">
-                      <li className="flex items-center bg-neutral-900 p-2 rounded-xl border-2 border-neutral-700">
-                         <div className="w-6 h-6 rounded-full bg-yellow-400 border-2 border-yellow-600 mr-3 shadow-sm flex-shrink-0"></div>
-                         冠軍: 20,000mAh 行動電源
-                      </li>
-                      <li className="flex items-center bg-neutral-900 p-2 rounded-xl border-2 border-neutral-700">
-                         <div className="w-6 h-6 rounded-full bg-neutral-300 border-2 border-neutral-500 mr-3 shadow-sm flex-shrink-0"></div>
-                         亞軍: 保溫跳跳吸管杯
-                      </li>
-                      <li className="flex items-center bg-neutral-900 p-2 rounded-xl border-2 border-neutral-700">
-                         <div className="w-6 h-6 rounded-full bg-orange-500 border-2 border-orange-700 mr-3 shadow-sm flex-shrink-0"></div>
-                         季軍: 放鬆筋膜槍
-                      </li>
-                    </ul>
+              <div className="lg:col-span-5">
+                <div className="bg-neutral-800 rounded-3xl border-4 border-[#0f172a] p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(59,130,246,1)] h-full relative overflow-hidden">
+                   <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-red-500 to-blue-500"></div>
+                   
+                   <div className="flex items-center justify-between mb-8 border-b-2 border-neutral-700 pb-4">
+                    <div className="flex items-center">
+                      <Star className="w-8 h-8 text-yellow-400 fill-yellow-400 mr-2 drop-shadow-[1px_1px_0px_rgba(0,0,0,1)]" />
+                      <h2 className="text-2xl font-black text-white tracking-wide">極速神人榜</h2>
+                    </div>
+                    {loading && <span className="w-6 h-6 rounded-full border-4 border-yellow-400 border-t-transparent animate-spin"></span>}
                   </div>
+
+                  {loading ? (
+                    <div className="space-y-4">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="animate-pulse bg-neutral-700 border-4 border-neutral-600 h-24 rounded-2xl"></div>
+                      ))}
+                    </div>
+                  ) : scores.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-48 text-neutral-400 border-4 border-dashed border-neutral-600 rounded-2xl bg-neutral-900/50">
+                      <Trophy className="w-12 h-12 mb-3 opacity-50" />
+                      <p className="font-bold">尚無挑戰者，搶先成為第一名！</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 relative z-10">
+                      {scores.map((score, index) => {
+                        const rankStyles = [
+                          { bg: 'bg-yellow-400', border: 'border-yellow-600', textColor: 'text-neutral-900', iconBg: 'bg-white', iconColor: 'text-yellow-500 fill-yellow-500', timeColor: 'text-neutral-900' },
+                          { bg: 'bg-neutral-300', border: 'border-neutral-500', textColor: 'text-neutral-900', iconBg: 'bg-white', iconColor: 'text-neutral-600', timeColor: 'text-neutral-800' },
+                          { bg: 'bg-orange-400', border: 'border-orange-600', textColor: 'text-neutral-900', iconBg: 'bg-white', iconColor: 'text-orange-600', timeColor: 'text-neutral-900' }
+                        ];
+                        const style = rankStyles[index] || rankStyles[2];
+
+                        return (
+                          <div key={score.id} className={`flex items-center p-4 rounded-2xl border-4 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] transition-all transform hover:-translate-y-1 ${style.bg} ${style.border}`}>
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-xl border-4 border-[#0f172a] mr-4 shadow-inner ${style.iconBg} ${style.iconColor}`}>
+                              {index === 0 ? <Star className="w-6 h-6 fill-yellow-400" /> : index + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`font-black truncate text-xl ${style.textColor} drop-shadow-sm`}>{score.nickname}</p>
+                              <p className={`text-xs font-bold opacity-75 ${style.textColor}`}>完賽成績</p>
+                            </div>
+                            <div className="text-right ml-4 bg-white/50 px-3 py-1.5 rounded-lg border-2 border-[#0f172a]/20">
+                               <p className={`font-mono text-xl md:text-2xl font-black tracking-tighter ${style.timeColor}`}>
+                                 {score.timeDisplay}
+                               </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      <div className="mt-8 pt-6 border-t-2 border-neutral-700">
+                        <p className="text-sm font-black text-yellow-400 uppercase tracking-widest mb-4">👑 最終大獎預覽</p>
+                        <ul className="space-y-3 text-sm font-bold text-neutral-300">
+                          <li className="flex items-center bg-neutral-900 p-2 rounded-xl border-2 border-neutral-700">
+                             <div className="w-6 h-6 rounded-full bg-yellow-400 border-2 border-yellow-600 mr-3 shadow-sm flex-shrink-0"></div>
+                             冠軍: 20,000mAh 行動電源
+                          </li>
+                          <li className="flex items-center bg-neutral-900 p-2 rounded-xl border-2 border-neutral-700">
+                             <div className="w-6 h-6 rounded-full bg-neutral-300 border-2 border-neutral-500 mr-3 shadow-sm flex-shrink-0"></div>
+                             亞軍: 保溫跳跳吸管杯
+                          </li>
+                          <li className="flex items-center bg-neutral-900 p-2 rounded-xl border-2 border-neutral-700">
+                             <div className="w-6 h-6 rounded-full bg-orange-500 border-2 border-orange-700 mr-3 shadow-sm flex-shrink-0"></div>
+                             季軍: 放鬆筋膜槍
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
-          </div>
+          </main>
+          
+          <footer className="text-center py-8 text-neutral-500 font-bold text-sm mt-auto">
+            <p>© 2026 三星旗艦體驗館-微風南山限定</p>
+          </footer>
         </div>
-      </main>
-      
-      {/* 更新的頁尾文字 */}
-      <footer className="text-center py-8 text-neutral-500 font-bold text-sm mt-auto">
-        <p>© 2026 三星旗艦體驗館-微風南山限定</p>
-      </footer>
-    </div>
-  );
-}
+      );
+    }
+
+    // 啟動應用程式
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
