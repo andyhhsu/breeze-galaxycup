@@ -59,6 +59,8 @@
     const WifiOff = (p) => <Icon {...p}><line x1="2" x2="22" y1="2" y2="22"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M2 8.82a15 15 0 0 1 4.17-2.65"/><path d="M10.66 5c4.01-.36 8.14.9 11.34 3.82"/><path d="M16.85 11.4a10 10 0 0 1 1.98 1.83"/><path d="M5 11.82a10 10 0 0 1 2.37-1.92"/></Icon>;
     const Lock = (p) => <Icon {...p}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Icon>;
     const X = (p) => <Icon {...p}><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></Icon>;
+    // 新增相機圖示
+    const Camera = (p) => <Icon {...p}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></Icon>;
 
     // 您專屬的 Google Apps Script 網址
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbyDupulaMXWebWp2cnkULaovpW5cQRJcN47oVmQ1ObcJFA8kqsp9nP7Qh7CmJEpRy1u/exec';
@@ -386,7 +388,7 @@
               <div className="lg:col-span-7">
                 <div className="bg-neutral-800 rounded-3xl border-4 border-[#0f172a] p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(239,68,68,1)] relative overflow-hidden">
                   
-                  <div className="flex items-center mb-8 relative z-10 border-b-2 border-neutral-700 pb-4">
+                  <div className="flex items-center mb-6 relative z-10 border-b-2 border-neutral-700 pb-4">
                     <Flag className="w-8 h-8 text-red-500 mr-3" />
                     <h2 className="text-2xl font-black text-white tracking-wide">登記完賽成績</h2>
                   </div>
@@ -539,6 +541,21 @@
                     </div>
                     {loading && <span className="w-6 h-6 rounded-full border-4 border-yellow-400 border-t-transparent animate-spin"></span>}
                   </div>
+
+                  {/* 🌟 移至此處：拍照提醒區塊 */}
+                  {!isSubmitted && (
+                    <div className="bg-blue-900/40 border-4 border-blue-500 rounded-2xl p-4 md:p-5 mb-6 flex items-start shadow-[4px_4px_0px_0px_rgba(59,130,246,1)] relative z-10 animate-[fadeIn_0.5s_ease-in-out]">
+                      <div className="bg-blue-500 p-2 md:p-3 rounded-xl mr-4 border-2 border-blue-800 flex-shrink-0">
+                        <Camera className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg md:text-xl font-black text-blue-300 mb-1 tracking-wide">📸 登記前請先拍照！</h3>
+                        <p className="text-sm md:text-base font-bold text-blue-100 leading-relaxed">
+                          找門市夥伴登記成績時，<span className="text-yellow-400 border-b-2 border-yellow-500/50">請務必先用手機拍下您的完賽畫面</span>，以免紀錄被下一位挑戰者不小心洗掉喔！
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {connectionStatus === 'demo' && (
                     <div className="mb-4 bg-orange-900/30 border-2 border-orange-500/50 rounded-xl p-3 text-orange-300 text-sm flex items-start">
