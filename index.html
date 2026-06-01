@@ -12,19 +12,17 @@
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 
-  <!-- 3. 載入 Babel (瀏覽器即時翻譯 JSX 語法) -->
+  <!-- 3. 載入 Babel (瀏覽器即時編譯 JSX) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
-    /* 補足 Tailwind 的自訂動畫設定 */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .animate-\\[fadeIn_0\\.5s_ease-in-out\\] {
+    .animate-fadeIn {
       animation: fadeIn 0.5s ease-in-out forwards;
     }
-    /* 隱藏密碼輸入框的點點，讓它維持數字呈現 */
     input[type="password"].show-number {
       -webkit-text-security: disc;
     }
@@ -37,7 +35,7 @@
   <script type="text/babel" data-presets="react">
     const { useState, useEffect, useCallback, useRef } = React;
     
-    // 內建 SVG 圖示元件
+    // --- 內部 SVG 圖示元件 (確保離線或 CDN 異常時仍能顯示) ---
     const Icon = ({ children, className, strokeWidth = 2, fill = "none", ...props }) => (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
         {children}
@@ -52,17 +50,14 @@
     const Send = (p) => <Icon {...p}><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Icon>;
     const AlertCircle = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></Icon>;
     const CheckCircle2 = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></Icon>;
-    const QrCode = (p) => <Icon {...p}><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></Icon>;
     const RefreshCcw = (p) => <Icon {...p}><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/></Icon>;
     const Star = (p) => <Icon {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></Icon>;
     const Flag = (p) => <Icon {...p}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></Icon>;
-    const WifiOff = (p) => <Icon {...p}><line x1="2" x2="22" y1="2" y2="22"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M2 8.82a15 15 0 0 1 4.17-2.65"/><path d="M10.66 5c4.01-.36 8.14.9 11.34 3.82"/><path d="M16.85 11.4a10 10 0 0 1 1.98 1.83"/><path d="M5 11.82a10 10 0 0 1 2.37-1.92"/></Icon>;
     const Lock = (p) => <Icon {...p}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Icon>;
     const X = (p) => <Icon {...p}><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></Icon>;
-    // 新增相機圖示
     const Camera = (p) => <Icon {...p}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></Icon>;
 
-    // 您專屬的 Google Apps Script 網址
+    // Google Apps Script 網址
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbyDupulaMXWebWp2cnkULaovpW5cQRJcN47oVmQ1ObcJFA8kqsp9nP7Qh7CmJEpRy1u/exec';
 
     function App() {
@@ -71,56 +66,34 @@
       const [connectionStatus, setConnectionStatus] = useState('connecting'); 
       
       const [formData, setFormData] = useState({
-        nickname: '',
-        phone: '',
-        minutes: '01',
-        seconds: '30',
-        milliseconds: '000'
+        nickname: '', phone: '', minutes: '01', seconds: '30', milliseconds: '000'
       });
       
       const [message, setMessage] = useState({ type: '', text: '' });
       const [isSubmitting, setIsSubmitting] = useState(false);
       const [isSubmitted, setIsSubmitted] = useState(false);
-      
-      // Feature 1: 防呆密碼狀態
       const [showPinModal, setShowPinModal] = useState(false);
       const [pin, setPin] = useState('');
+      const [countdown, setCountdown] = useState(30);
 
-      // Feature 3: 自動跳轉 Ref
       const secondsRef = useRef(null);
       const millisecondsRef = useRef(null);
 
-      // Feature 4: 視覺化倒數計時狀態
-      const [countdown, setCountdown] = useState(30);
-
-      // --- 資料獲取邏輯 ---
+      // --- 核心邏輯：獲取排行榜 ---
       const fetchScores = useCallback(async () => {
-        if (!GAS_URL) {
-          setLoading(false);
-          setConnectionStatus('error');
-          return;
-        }
-
         try {
-          const response = await fetch(`${GAS_URL}?action=getTopScores`, {
-            method: 'GET',
-            redirect: 'follow' 
-          });
-          
-          if (!response.ok) throw new Error('Network response was not ok');
-          
+          const response = await fetch(`${GAS_URL}?action=getTopScores`, { redirect: 'follow' });
+          if (!response.ok) throw new Error();
           const data = await response.json();
           setScores(data);
           setConnectionStatus('connected');
         } catch (error) {
-          console.error('獲取資料失敗:', error);
-          // 若發生 Failed to fetch，優雅降級為本地預覽模式
           setConnectionStatus('demo');
-          setScores(prev => prev.length === 0 ? [
-            { id: 'd1', nickname: '信義車神', timeDisplay: '01:25.430', totalMs: 85430 },
-            { id: 'd2', nickname: '南山庫巴', timeDisplay: '01:28.100', totalMs: 88100 },
-            { id: 'd3', nickname: '星粉路易吉', timeDisplay: '01:30.050', totalMs: 90050 }
-          ] : prev);
+          setScores(prev => prev.length ? prev : [
+            { id: '1', nickname: '信義車神', timeDisplay: '01:22.430', totalMs: 82430 },
+            { id: '2', nickname: '南山夥伴', timeDisplay: '01:25.100', totalMs: 85100 },
+            { id: '3', nickname: '星粉小路', timeDisplay: '01:30.050', totalMs: 90050 }
+          ]);
         } finally {
           setLoading(false);
         }
@@ -128,22 +101,14 @@
 
       useEffect(() => {
         fetchScores();
-        const intervalId = setInterval(() => {
-          fetchScores();
-        }, 10000);
-        return () => clearInterval(intervalId);
+        const id = setInterval(fetchScores, 15000);
+        return () => clearInterval(id);
       }, [fetchScores]);
 
-      // --- 輸入處理與自動跳轉邏輯 ---
+      // --- 輸入與跳轉 ---
       const handleInputChange = (e) => {
         const { name, value } = e.target;
-        
-        // 數字過濾
-        if (['phone', 'minutes', 'seconds', 'milliseconds'].includes(name)) {
-          if (!/^\d*$/.test(value)) return;
-        }
-        
-        // 長度限制
+        if (['phone', 'minutes', 'seconds', 'milliseconds'].includes(name) && !/^\d*$/.test(value)) return;
         if (name === 'phone' && value.length > 10) return;
         if (name === 'minutes' && value.length > 2) return;
         if (name === 'seconds' && value.length > 2) return;
@@ -151,487 +116,197 @@
 
         setFormData(prev => ({ ...prev, [name]: value }));
 
-        // 🌟 Feature 3: 自動跳轉 (Auto-Tabbing)
-        if (name === 'minutes' && value.length === 2) {
-          secondsRef.current?.focus();
-        }
-        if (name === 'seconds' && value.length === 2) {
-          millisecondsRef.current?.focus();
-        }
+        if (name === 'minutes' && value.length === 2) secondsRef.current?.focus();
+        if (name === 'seconds' && value.length === 2) millisecondsRef.current?.focus();
       };
 
-      const padZero = (num, length) => {
-        return num.toString().padStart(length, '0');
-      };
-
-      // --- 表單送出檢查 (觸發密碼視窗) ---
+      // --- 送出流程 ---
       const handlePreSubmit = (e) => {
         e.preventDefault();
-        setMessage({ type: '', text: '' });
-
-        if (!GAS_URL) {
-          setMessage({ type: 'error', text: '無法連線至伺服器，請確認網路狀態或系統設定。' });
+        if (!formData.nickname || !formData.phone || formData.phone.length < 9) {
+          setMessage({ type: 'error', text: '請完整填寫暱稱與正確的電話格式。' });
           return;
         }
-        if (!formData.nickname.trim() || !formData.phone.trim()) {
-          setMessage({ type: 'error', text: '請填寫暱稱與聯絡電話。' });
-          return;
-        }
-        if (formData.phone.length < 9) {
-          setMessage({ type: 'error', text: '請填寫正確的手機號碼格式。' });
-          return;
-        }
-
-        const sec = parseInt(formData.seconds || 0, 10);
-        if (sec >= 60) {
-          setMessage({ type: 'error', text: '秒數不能大於或等於60。' });
-          return;
-        }
-
-        // 通過基本驗證，開啟授權碼視窗
         setPin('');
         setShowPinModal(true);
       };
 
-      // --- 實際送出資料至後端 ---
       const executeSubmit = async () => {
-        // 🌟 Feature 1: 防作弊密碼驗證 (設定為 6699)
         if (pin !== '6699') {
-          setMessage({ type: 'error', text: '門市授權碼錯誤！' });
-          setShowPinModal(false);
+          alert('密碼錯誤！');
           return;
         }
-
         setShowPinModal(false);
         setIsSubmitting(true);
-
-        const min = parseInt(formData.minutes || 0, 10);
-        const sec = parseInt(formData.seconds || 0, 10);
-        const ms = parseInt(formData.milliseconds || 0, 10);
-
-        const totalMs = (min * 60 * 1000) + (sec * 1000) + ms;
-        const timeDisplay = `${padZero(min, 2)}:${padZero(sec, 2)}.${padZero(ms, 3)}`;
+        
+        const timeDisplay = `${formData.minutes.padStart(2,'0')}:${formData.seconds.padStart(2,'0')}.${formData.milliseconds.padStart(3,'0')}`;
+        const totalMs = (parseInt(formData.minutes)*60000) + (parseInt(formData.seconds)*1000) + parseInt(formData.milliseconds);
 
         try {
-          const payload = {
-            action: 'addScore',
-            nickname: formData.nickname.trim(),
-            phone: formData.phone.trim(),
-            timeDisplay: timeDisplay,
-            totalMs: totalMs
-          };
-
-          const response = await fetch(GAS_URL, {
+          const res = await fetch(GAS_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({ action: 'addScore', nickname: formData.nickname, phone: formData.phone, timeDisplay, totalMs }),
             redirect: 'follow'
           });
-
-          const result = await response.json();
-
+          const result = await res.json();
           if (result.status === 'success') {
             setIsSubmitted(true);
-            setMessage({ type: 'success', text: '成績登錄成功！' });
-            fetchScores(); 
-          } else {
-            throw new Error(result.message);
+            fetchScores();
           }
-
-        } catch (error) {
-          console.error('寫入資料失敗:', error);
-          
-          // 如果處於展示/預覽模式，也允許模擬成功送出
+        } catch (e) {
           if (connectionStatus === 'demo') {
             setIsSubmitted(true);
-            setMessage({ type: 'success', text: '成績登錄成功！(本地預覽)' });
-            const newScore = {
-              id: Date.now(),
-              nickname: formData.nickname.trim(),
-              timeDisplay: timeDisplay,
-              totalMs: totalMs
-            };
-            setScores(prev => {
-              const updated = [...prev, newScore].sort((a, b) => a.totalMs - b.totalMs);
-              return updated.slice(0, 3);
-            });
+            setScores(prev => [...prev, { id: Date.now(), nickname: formData.nickname, timeDisplay, totalMs }].sort((a,b)=>a.totalMs-b.totalMs).slice(0,3));
           } else {
-            setMessage({ type: 'error', text: '成績登錄失敗，請確認網路狀態後再試。' });
+            alert('送出失敗，請檢查網路。');
           }
         } finally {
           setIsSubmitting(false);
         }
       };
 
-      // --- 重置表單 ---
-      const handleNextPlayer = useCallback(() => {
+      const resetApp = useCallback(() => {
         setIsSubmitted(false);
+        setFormData({ nickname: '', phone: '', minutes: '01', seconds: '30', milliseconds: '000' });
         setMessage({ type: '', text: '' });
-        setFormData({
-          nickname: '',
-          phone: '',
-          minutes: '01',
-          seconds: '30',
-          milliseconds: '000'
-        });
       }, []);
 
-      // 🌟 Feature 4: 成功畫面閒置 30 秒倒數計時與自動重置
       useEffect(() => {
-        let timer;
         if (isSubmitted) {
-          setCountdown(30); // 進入成功畫面時重置為 30 秒
-          timer = setInterval(() => {
-            setCountdown((prev) => {
-              if (prev <= 1) {
-                clearInterval(timer);
-                handleNextPlayer(); // 倒數結束，自動重置
-                return 0;
-              }
-              return prev - 1;
-            });
-          }, 1000);
+          setCountdown(30);
+          const timer = setInterval(() => setCountdown(p => p <= 1 ? (clearInterval(timer), resetApp(), 0) : p - 1), 1000);
+          return () => clearInterval(timer);
         }
-        return () => clearInterval(timer);
-      }, [isSubmitted, handleNextPlayer]);
+      }, [isSubmitted, resetApp]);
 
       return (
-        <div className="min-h-screen bg-[#111827] text-slate-100 font-sans selection:bg-red-500/30 flex flex-col relative">
-          
-          {/* 密碼授權 Modal (Overlay) */}
+        <div className="min-h-screen flex flex-col relative">
+          {/* PIN Modal */}
           {showPinModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-in-out]">
-              <div className="bg-neutral-800 rounded-3xl border-8 border-yellow-400 p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(239,68,68,1)] max-w-sm w-full relative">
-                <button 
-                  onClick={() => setShowPinModal(false)}
-                  className="absolute top-4 right-4 text-neutral-400 hover:text-white"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center border-4 border-yellow-400 mb-4">
-                    <Lock className="w-8 h-8 text-yellow-400" />
-                  </div>
-                  <h3 className="text-xl font-black text-white mb-2">門市人員授權</h3>
-                  <p className="text-sm text-neutral-400 font-bold mb-6">請輸入 4 碼專屬密碼以送出成績</p>
-                  
-                  <input
-                    type="password"
-                    pattern="[0-9]*"
-                    inputMode="numeric"
-                    autoFocus
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    className="w-full bg-neutral-900 border-4 border-[#0f172a] rounded-xl px-4 py-3 text-center text-3xl tracking-[1em] text-white font-black focus:outline-none focus:border-yellow-400 transition-all mb-6 show-number"
-                    placeholder="••••"
-                  />
-                  
-                  <button
-                    onClick={executeSubmit}
-                    disabled={pin.length < 4}
-                    className="w-full bg-yellow-400 hover:bg-yellow-300 text-neutral-900 font-black text-lg py-3 rounded-xl flex items-center justify-center transition-all border-4 border-neutral-900 border-b-8 active:border-b-4 active:translate-y-1 disabled:opacity-50 disabled:active:border-b-8 disabled:active:translate-y-0"
-                  >
-                    驗證並送出
-                  </button>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+              <div className="bg-neutral-800 border-8 border-yellow-400 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
+                <Lock className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+                <h3 className="text-2xl font-black mb-6">門市夥伴授權</h3>
+                <input 
+                  type="password" 
+                  autoFocus 
+                  value={pin} 
+                  onChange={e => setPin(e.target.value.replace(/\D/g,'').slice(0,4))}
+                  className="w-full bg-black border-4 border-white rounded-xl py-4 text-center text-4xl tracking-widest mb-6 show-number"
+                  placeholder="****"
+                />
+                <div className="flex gap-4">
+                  <button onClick={()=>setShowPinModal(false)} className="flex-1 py-3 bg-neutral-600 rounded-xl font-bold">取消</button>
+                  <button onClick={executeSubmit} className="flex-1 py-3 bg-yellow-400 text-black rounded-xl font-black">核對上傳</button>
                 </div>
               </div>
             </div>
           )}
 
-          <div 
-            className="w-full h-4 border-b-4 border-yellow-400" 
-            style={{ backgroundImage: 'repeating-conic-gradient(#000 0% 25%, #fff 0% 50%)', backgroundSize: '24px 24px' }}
-          ></div>
+          <div className="w-full h-3 bg-yellow-400" style={{ backgroundImage: 'repeating-conic-gradient(#000 0% 25%, #fff 0% 50%)', backgroundSize: '20px 20px' }}></div>
 
-          <header className="relative overflow-hidden bg-gradient-to-r from-red-600 via-red-500 to-blue-600 border-b-8 border-[#0f172a]">
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay"></div>
-            
-            <Star className="absolute top-4 right-1/4 w-6 h-6 text-yellow-300 opacity-50 fill-yellow-300 animate-pulse" />
-            <Star className="absolute bottom-4 left-1/3 w-4 h-4 text-yellow-300 opacity-30 fill-yellow-300" />
-            
-            <div className="max-w-6xl mx-auto px-4 py-8 relative z-10 flex flex-col md:flex-row items-center justify-between">
-              <div className="flex items-center space-x-4 mb-4 md:mb-0">
-                <div className="bg-white p-2 rounded-2xl border-4 border-[#0f172a] shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] rotate-[-5deg]">
-                   <Smartphone className="w-10 h-10 text-red-500" />
-                </div>
+          <header className="bg-gradient-to-r from-red-600 to-blue-600 p-6 border-b-8 border-black">
+            <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-4">
+                <div className="bg-white p-2 rounded-xl border-4 border-black rotate-[-3deg]"><Smartphone className="text-red-500 w-8 h-8" /></div>
                 <div>
-                  <h1 className="text-3xl md:text-4xl font-black tracking-wider text-white drop-shadow-[2px_2px_0px_rgba(0,0,0,0.8)]">
-                    Galaxy 星際盃：<span className="text-yellow-300">計時挑戰賽</span>
-                  </h1>
-                  <p className="text-white font-bold bg-black/30 inline-block px-3 py-1 rounded-full text-sm tracking-widest mt-2 border border-white/20">
-                    微風南山旗艦體驗館 限定活動
-                  </p>
+                  <h1 className="text-3xl font-black drop-shadow-lg">Galaxy 星際盃：<span className="text-yellow-300">計時挑戰賽</span></h1>
+                  <p className="text-xs bg-black/30 px-2 py-1 rounded-full inline-block mt-1">微風南山旗艦體驗館</p>
                 </div>
               </div>
-              <div className="flex space-x-2">
-                 <span className={`px-4 py-2 bg-white border-4 border-[#0f172a] rounded-xl text-neutral-900 font-bold text-sm flex items-center shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]`}>
-                   {connectionStatus === 'connected' && (
-                     <><span className="w-3 h-3 rounded-full bg-green-500 border-2 border-green-800 mr-2 animate-pulse"></span>連線中</>
-                   )}
-                   {connectionStatus === 'connecting' && (
-                     <><span className="w-3 h-3 rounded-full bg-yellow-500 border-2 border-yellow-800 mr-2 animate-pulse"></span>載入中</>
-                   )}
-                   {connectionStatus === 'demo' && (
-                     <><span className="w-3 h-3 rounded-full bg-orange-500 border-2 border-orange-800 mr-2 animate-pulse"></span>本地預覽</>
-                   )}
-                   {connectionStatus === 'error' && (
-                     <><span className="w-3 h-3 rounded-full bg-red-500 border-2 border-red-800 mr-2"></span>離線/錯誤</>
-                   )}
-                 </span>
+              <div className={`px-4 py-2 rounded-full border-4 border-black font-bold text-sm bg-white text-black`}>
+                {connectionStatus === 'connected' ? '● 連線中' : connectionStatus === 'demo' ? '● 離線/Demo模式' : '○ 載入中'}
               </div>
             </div>
           </header>
 
-          <main className="max-w-6xl mx-auto px-4 py-10 relative flex-1 w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              
-              <div className="lg:col-span-7">
-                <div className="bg-neutral-800 rounded-3xl border-4 border-[#0f172a] p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(239,68,68,1)] relative overflow-hidden">
-                  
-                  <div className="flex items-center mb-6 relative z-10 border-b-2 border-neutral-700 pb-4">
-                    <Flag className="w-8 h-8 text-red-500 mr-3" />
-                    <h2 className="text-2xl font-black text-white tracking-wide">登記完賽成績</h2>
+          <main className="max-w-6xl mx-auto w-full p-4 md:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
+            {/* 左側表單 */}
+            <div className="lg:col-span-7">
+              <div className="bg-neutral-800 border-4 border-black p-6 md:p-8 rounded-3xl shadow-[8px_8px_0_0_#ef4444] h-full">
+                {isSubmitted ? (
+                  <div className="text-center py-10 animate-fadeIn">
+                    <div className="w-48 h-48 bg-white p-4 mx-auto rounded-2xl border-4 border-black mb-6">
+                      <img src="https://github.com/andyhhsu/breeze-galaxycup/blob/main/LINE@%E5%BE%AE%E9%A2%A8%E5%8D%97%E5%B1%B1.png?raw=true" className="w-full h-full object-contain" />
+                    </div>
+                    <h2 className="text-3xl font-black text-yellow-400 mb-4">太棒了！挑戰成功！</h2>
+                    <p className="text-neutral-300 mb-8">請點擊下方按鈕加入 LINE@ 領取體驗禮</p>
+                    <a href="https://line.me/R/ti/p/@756lijxt" target="_blank" className="inline-block bg-blue-600 px-8 py-4 rounded-2xl font-black text-xl border-4 border-blue-900 shadow-lg active:translate-y-1 mb-8">👉 點此加入 LINE@ 領獎</a>
+                    <div className="text-neutral-500 font-bold">{countdown} 秒後自動重置...</div>
                   </div>
-
-                  {message.text && (
-                    <div className={`p-4 rounded-xl mb-6 flex items-start space-x-3 text-sm font-bold border-4 ${
-                      message.type === 'success' 
-                        ? 'bg-green-100 border-green-600 text-green-800' 
-                        : 'bg-red-100 border-red-600 text-red-800'
-                    }`}>
-                      {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 flex-shrink-0" />}
-                      <p>{message.text}</p>
+                ) : (
+                  <form onSubmit={handlePreSubmit} className="space-y-6">
+                    <div className="flex items-center gap-3 border-b-2 border-neutral-700 pb-4 mb-6">
+                      <Flag className="text-red-500" /><h2 className="text-2xl font-black">完賽成績登記</h2>
                     </div>
-                  )}
-
-                  {isSubmitted ? (
-                    <div className="relative z-10 flex flex-col items-center justify-center py-6 text-center animate-[fadeIn_0.5s_ease-in-out]">
-                      <div className="w-48 h-48 bg-white p-3 rounded-2xl border-4 border-[#0f172a] shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] mb-4 flex items-center justify-center relative overflow-hidden">
-                        <img src="https://github.com/andyhhsu/breeze-galaxycup/blob/main/LINE@%E5%BE%AE%E9%A2%A8%E5%8D%97%E5%B1%B1.png?raw=true" alt="微風南山 LINE QR Code" className="w-full h-full object-contain" />
-                      </div>
-                      
-                      <h3 className="text-3xl font-black text-yellow-400 mb-2 drop-shadow-[2px_2px_0px_rgba(0,0,0,1)]">太棒了！極速車神！</h3>
-                      <p className="text-neutral-300 mb-6 max-w-sm font-medium">
-                        請出示此畫面並掃描上方 QR Code 加入<br/>
-                        <a href="https://line.me/R/ti/p/@756lijxt" target="_blank" rel="noopener noreferrer" className="font-bold text-white bg-blue-600 hover:bg-blue-500 transition-all px-4 py-2 rounded-lg mt-3 inline-block border-2 border-blue-800 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] active:translate-y-1 active:shadow-none cursor-pointer">
-                          👉 點擊加入 LINE 官方帳號
-                        </a><br/>
-                        <span className="inline-block mt-3">即可向工作人員領取您的體驗禮！</span>
-                      </p>
-                      
-                      <button
-                        onClick={handleNextPlayer}
-                        className="px-8 py-4 bg-yellow-400 hover:bg-yellow-300 text-neutral-900 font-black rounded-2xl flex items-center transition-all border-4 border-neutral-900 border-b-8 active:border-b-4 active:translate-y-1"
-                      >
-                        <RefreshCcw className="w-5 h-5 mr-2 font-bold" /> 換下一位挑戰者
-                      </button>
-
-                      {/* 🌟 Feature 4: 視覺化倒數提示 */}
-                      <div className="mt-6 flex items-center justify-center space-x-2 text-neutral-500 font-bold bg-neutral-900/50 px-4 py-2 rounded-full border-2 border-neutral-700">
-                        <Timer className="w-4 h-4 animate-pulse text-yellow-500" />
-                        <span>系統將於 <span className="text-yellow-400">{countdown}</span> 秒後自動重置</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <form onSubmit={handlePreSubmit} className="space-y-6 relative z-10">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <label className="text-sm font-bold text-neutral-300 flex items-center">
-                            <User className="w-5 h-5 mr-1.5 text-blue-400" /> 遊戲暱稱
-                          </label>
-                          <input
-                            type="text"
-                            name="nickname"
-                            value={formData.nickname}
-                            onChange={handleInputChange}
-                            placeholder="例如：信義車神"
-                            className="w-full bg-neutral-900 border-4 border-[#0f172a] rounded-2xl px-4 py-3 text-white font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-neutral-600"
-                            maxLength={15}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-bold text-neutral-300 flex items-center">
-                            <Phone className="w-5 h-5 mr-1.5 text-blue-400" /> 聯絡電話 (得獎通知)
-                          </label>
-                          <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="0912345678"
-                            className="w-full bg-neutral-900 border-4 border-[#0f172a] rounded-2xl px-4 py-3 text-white font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-neutral-600"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-3 pt-6 border-t-2 border-neutral-700">
-                        <label className="text-sm font-bold text-neutral-300 flex items-center mb-2">
-                          <Timer className="w-5 h-5 mr-1.5 text-red-400" /> 完賽時間 (分 : 秒 . 毫秒)
-                        </label>
-                        <div className="flex items-center space-x-2 md:space-x-4 p-4 bg-neutral-900 rounded-2xl border-4 border-[#0f172a]">
-                          <div className="flex-1 relative">
-                            <input
-                              type="text"
-                              name="minutes"
-                              value={formData.minutes}
-                              onChange={handleInputChange}
-                              className="w-full bg-transparent border-0 px-2 md:px-4 py-2 text-center text-3xl md:text-4xl font-black font-mono text-white focus:ring-0 outline-none"
-                              placeholder="01"
-                            />
-                            <span className="absolute bottom-0 right-2 text-sm font-bold text-neutral-500">m</span>
-                          </div>
-                          <span className="text-3xl font-black text-red-500">:</span>
-                          <div className="flex-1 relative">
-                            <input
-                              type="text"
-                              name="seconds"
-                              ref={secondsRef}
-                              value={formData.seconds}
-                              onChange={handleInputChange}
-                              className="w-full bg-transparent border-0 px-2 md:px-4 py-2 text-center text-3xl md:text-4xl font-black font-mono text-white focus:ring-0 outline-none"
-                              placeholder="30"
-                            />
-                            <span className="absolute bottom-0 right-2 text-sm font-bold text-neutral-500">s</span>
-                          </div>
-                          <span className="text-3xl font-black text-red-500">.</span>
-                          <div className="flex-1 relative">
-                            <input
-                              type="text"
-                              name="milliseconds"
-                              ref={millisecondsRef}
-                              value={formData.milliseconds}
-                              onChange={handleInputChange}
-                              className="w-full bg-transparent border-0 px-2 md:px-4 py-2 text-center text-3xl md:text-4xl font-black font-mono text-white focus:ring-0 outline-none"
-                              placeholder="000"
-                            />
-                            <span className="absolute bottom-0 right-2 text-sm font-bold text-neutral-500">ms</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="w-full mt-8 bg-green-500 hover:bg-green-400 text-white font-black text-xl py-4 rounded-2xl flex items-center justify-center transition-all border-4 border-green-900 border-b-8 active:border-b-4 active:translate-y-1 shadow-[0_4px_0_0_rgba(0,0,0,0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:border-b-8"
-                      >
-                        {isSubmitting ? (
-                          <span className="flex items-center">
-                             <span className="animate-spin w-6 h-6 border-4 border-white border-t-transparent rounded-full mr-3"></span>
-                             上傳資料中...
-                          </span>
-                        ) : (
-                          <span className="flex items-center text-2xl tracking-wide drop-shadow-md">
-                            <Send className="w-6 h-6 mr-3" strokeWidth={3} /> 登錄成績並兌換好禮
-                          </span>
-                        )}
-                      </button>
-                    </form>
-                  )}
-                </div>
-              </div>
-
-              <div className="lg:col-span-5">
-                <div className="bg-neutral-800 rounded-3xl border-4 border-[#0f172a] p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(59,130,246,1)] h-full relative overflow-hidden">
-                   <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-red-500 to-blue-500"></div>
-                   
-                   <div className="flex items-center justify-between mb-4 border-b-2 border-neutral-700 pb-4">
-                    <div className="flex items-center flex-wrap">
-                      <Star className="w-8 h-8 text-yellow-400 fill-yellow-400 mr-2 drop-shadow-[1px_1px_0px_rgba(0,0,0,1)]" />
-                      <h2 className="text-2xl font-black text-white tracking-wide">
-                        極速神人榜 <span className="text-base md:text-lg text-yellow-300 ml-1 tracking-normal">(特別杯-彩虹之路)</span>
-                      </h2>
-                    </div>
-                    {loading && <span className="w-6 h-6 rounded-full border-4 border-yellow-400 border-t-transparent animate-spin"></span>}
-                  </div>
-
-                  {/* 🌟 移至此處：拍照提醒區塊 */}
-                  {!isSubmitted && (
-                    <div className="bg-blue-900/40 border-4 border-blue-500 rounded-2xl p-4 md:p-5 mb-6 flex items-start shadow-[4px_4px_0px_0px_rgba(59,130,246,1)] relative z-10 animate-[fadeIn_0.5s_ease-in-out]">
-                      <div className="bg-blue-500 p-2 md:p-3 rounded-xl mr-4 border-2 border-blue-800 flex-shrink-0">
-                        <Camera className="w-6 h-6 text-white" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-bold text-neutral-400 mb-2">遊戲暱稱</label>
+                        <input name="nickname" value={formData.nickname} onChange={handleInputChange} className="w-full bg-black border-4 border-black rounded-xl p-3 font-bold focus:border-blue-500 outline-none" placeholder="例如：南山車神" />
                       </div>
                       <div>
-                        <h3 className="text-lg md:text-xl font-black text-blue-300 mb-1 tracking-wide">📸 登記前請先拍照！</h3>
-                        <p className="text-sm md:text-base font-bold text-blue-100 leading-relaxed">
-                          找門市夥伴登記成績時，<span className="text-yellow-400 border-b-2 border-yellow-500/50">請務必先用手機拍下您的完賽畫面</span>，以免紀錄被下一位挑戰者不小心洗掉喔！
-                        </p>
+                        <label className="block text-sm font-bold text-neutral-400 mb-2">聯絡電話</label>
+                        <input name="phone" value={formData.phone} onChange={handleInputChange} className="w-full bg-black border-4 border-black rounded-xl p-3 font-bold focus:border-blue-500 outline-none" placeholder="0912345678" />
                       </div>
                     </div>
-                  )}
-
-                  {connectionStatus === 'demo' && (
-                    <div className="mb-4 bg-orange-900/30 border-2 border-orange-500/50 rounded-xl p-3 text-orange-300 text-sm flex items-start">
-                      <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" />
-                      <p>無法連線至試算表，已啟用「本地預覽」。(請確認部署權限是否設為「所有人」)</p>
+                    <div className="bg-black border-4 border-black p-6 rounded-2xl">
+                       <label className="block text-center text-sm font-bold text-red-400 mb-4">完賽時間 (分:秒.毫秒)</label>
+                       <div className="flex items-center justify-center gap-2 md:gap-4">
+                         <input name="minutes" value={formData.minutes} onChange={handleInputChange} className="w-20 bg-transparent text-4xl md:text-5xl font-black text-center outline-none border-b-4 border-neutral-800 focus:border-yellow-400" />
+                         <span className="text-4xl font-black">:</span>
+                         <input name="seconds" ref={secondsRef} value={formData.seconds} onChange={handleInputChange} className="w-20 bg-transparent text-4xl md:text-5xl font-black text-center outline-none border-b-4 border-neutral-800 focus:border-yellow-400" />
+                         <span className="text-4xl font-black">.</span>
+                         <input name="milliseconds" ref={millisecondsRef} value={formData.milliseconds} onChange={handleInputChange} className="w-24 bg-transparent text-4xl md:text-5xl font-black text-center outline-none border-b-4 border-neutral-800 focus:border-yellow-400" />
+                       </div>
                     </div>
-                  )}
+                    <button type="submit" className="w-full bg-green-500 py-5 rounded-2xl text-2xl font-black border-b-8 border-green-900 active:border-b-0 active:translate-y-1 transition-all">送出成績</button>
+                  </form>
+                )}
+              </div>
+            </div>
 
-                  {loading ? (
-                    <div className="space-y-4">
-                      {[1, 2, 3].map(i => (
-                        <div key={i} className="animate-pulse bg-neutral-700 border-4 border-neutral-600 h-24 rounded-2xl"></div>
-                      ))}
-                    </div>
-                  ) : scores.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-48 text-neutral-400 border-4 border-dashed border-neutral-600 rounded-2xl bg-neutral-900/50">
-                      <Trophy className="w-12 h-12 mb-3 opacity-50" />
-                      <p className="font-bold">尚無挑戰者，搶先成為第一名！</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4 relative z-10">
-                      {scores.map((score, index) => {
-                        const rankStyles = [
-                          { bg: 'bg-yellow-400', border: 'border-yellow-600', textColor: 'text-neutral-900', iconBg: 'bg-white', iconColor: 'text-yellow-500 fill-yellow-500', timeColor: 'text-neutral-900' },
-                          { bg: 'bg-neutral-300', border: 'border-neutral-500', textColor: 'text-neutral-900', iconBg: 'bg-white', iconColor: 'text-neutral-600', timeColor: 'text-neutral-800' },
-                          { bg: 'bg-orange-400', border: 'border-orange-600', textColor: 'text-neutral-900', iconBg: 'bg-white', iconColor: 'text-orange-600', timeColor: 'text-neutral-900' }
-                        ];
-                        const style = rankStyles[index] || rankStyles[2];
+            {/* 右側排行榜 */}
+            <div className="lg:col-span-5">
+              <div className="bg-neutral-800 border-4 border-black p-6 rounded-3xl shadow-[8px_8px_0_0_#3b82f6] h-full">
+                <div className="flex items-center gap-2 mb-4">
+                  <Star className="text-yellow-400 fill-yellow-400" />
+                  <h2 className="text-xl font-black">極速神人榜 <span className="text-sm text-yellow-300 block md:inline">(特別杯-庫巴城堡)</span></h2>
+                </div>
 
-                        return (
-                          <div key={score.id} className={`flex items-center p-4 rounded-2xl border-4 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] transition-all transform hover:-translate-y-1 ${style.bg} ${style.border}`}>
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-xl border-4 border-[#0f172a] mr-4 shadow-inner ${style.iconBg} ${style.iconColor}`}>
-                              {index === 0 ? <Star className="w-6 h-6 fill-yellow-400" /> : index + 1}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className={`font-black truncate text-xl ${style.textColor} drop-shadow-sm`}>{score.nickname}</p>
-                              <p className={`text-xs font-bold opacity-75 ${style.textColor}`}>完賽成績</p>
-                            </div>
-                            <div className="text-right ml-4 bg-white/50 px-3 py-1.5 rounded-lg border-2 border-[#0f172a]/20">
-                               <p className={`font-mono text-xl md:text-2xl font-black tracking-tighter ${style.timeColor}`}>
-                                 {score.timeDisplay}
-                               </p>
-                            </div>
-                          </div>
-                        );
-                      })}
+                {/* 📸 拍照提醒區塊 */}
+                {!isSubmitted && (
+                  <div className="bg-blue-600 border-4 border-black rounded-xl p-3 mb-6 flex items-start gap-3 animate-fadeIn">
+                    <Camera className="w-10 h-10 shrink-0" />
+                    <p className="text-sm font-bold leading-tight">找門市夥伴登記成績時，<span className="text-yellow-200 underline">請務必先拍下完賽畫面</span>，以免紀錄被洗掉喔！</p>
+                  </div>
+                )}
 
-                      <div className="mt-8 pt-6 border-t-2 border-neutral-700">
-                        <p className="text-sm font-black text-yellow-400 uppercase tracking-widest mb-4">👑 最終大獎預覽</p>
-                        <ul className="space-y-3 text-sm font-bold text-neutral-300">
-                          <li className="flex items-center bg-neutral-900 p-2 rounded-xl border-2 border-neutral-700">
-                             <div className="w-6 h-6 rounded-full bg-yellow-400 border-2 border-yellow-600 mr-3 shadow-sm flex-shrink-0"></div>
-                             冠軍: 20,000mAh 行動電源
-                          </li>
-                          <li className="flex items-center bg-neutral-900 p-2 rounded-xl border-2 border-neutral-700">
-                             <div className="w-6 h-6 rounded-full bg-neutral-300 border-2 border-neutral-500 mr-3 shadow-sm flex-shrink-0"></div>
-                             亞軍: 保溫跳跳吸管杯
-                          </li>
-                          <li className="flex items-center bg-neutral-900 p-2 rounded-xl border-2 border-neutral-700">
-                             <div className="w-6 h-6 rounded-full bg-orange-500 border-2 border-orange-700 mr-3 shadow-sm flex-shrink-0"></div>
-                             季軍: 放鬆筋膜槍
-                          </li>
-                        </ul>
+                <div className="space-y-3">
+                  {loading ? <div className="text-center py-10 animate-pulse text-neutral-500">載入排行中...</div> : 
+                    scores.map((s, i) => (
+                      <div key={s.id} className={`flex items-center p-3 rounded-xl border-4 border-black ${i===0?'bg-yellow-400 text-black':i===1?'bg-slate-300 text-black':i===2?'bg-orange-400 text-black':'bg-neutral-700'}`}>
+                        <div className="w-8 h-8 rounded-lg bg-black/20 flex items-center justify-center font-black mr-3">{i+1}</div>
+                        <div className="flex-1 font-black truncate">{s.nickname}</div>
+                        <div className="font-mono font-black">{s.timeDisplay}</div>
                       </div>
-                    </div>
-                  )}
+                    ))
+                  }
+                </div>
+
+                <div className="mt-8 pt-6 border-t-2 border-neutral-700">
+                  <p className="text-xs font-black text-yellow-400 mb-3 tracking-widest uppercase">🏆 最終大獎</p>
+                  <ul className="text-xs space-y-2 font-bold text-neutral-300">
+                    <li>● 冠軍: 20,000mAh 行動電源</li>
+                    <li>● 亞軍: 保溫跳跳吸管杯</li>
+                    <li>● 季軍: 放鬆筋膜槍</li>
+                  </ul>
                 </div>
               </div>
             </div>
           </main>
           
-          <footer className="text-center py-8 text-neutral-500 font-bold text-sm mt-auto">
-            <p>© 2026 三星旗艦體驗館-微風南山限定</p>
-          </footer>
+          <footer className="p-6 text-center text-neutral-600 text-xs font-bold">© 2026 三星旗艦體驗館-微風南山限定</footer>
         </div>
       );
     }
